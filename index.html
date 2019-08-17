@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>U S E R Management</title>
+  </head>
+  <body style="margin-left: 10px; margin-right: 10px">
+    <h1> U S E R Management</h1>
+    <hr/>
+    <div id="userCount">Current user count: 0</div>
+    <div id="message" style='color:blue'>
+
+    </div>     
+    
+    <hr/>
+    <div>Create or search a user:</div>
+    <form id="createUserForm">
+    <table>
+        <tr>
+            <td>First Name: </td>
+            <td><input type="text" id="newUserFirstName"/> </td>
+        </tr>
+        
+        <tr>
+            
+            <td>Last Name: </td>
+            <td><input type="text" id="newUserLastName"/>  </td>
+        </tr>
+        <tr>
+                <td>Role: </td>
+                <td><input type="text" id="newUserRole"/>  </td>
+        </tr>
+        <tr>
+            <td colspan="3">
+                    <input type="button" value="Create User" onclick="createUser()"/>
+                    <input type="button" value="Search" onclick="searchUsers()"/>
+            </td>
+        </tr>
+    </table>
+    </form>
+    <hr/>
+    <div>Create Random users:</div>
+    <div>
+        <input type="text" id="newCount"> <input type="button" value="Create Bulk Users" onclick="createUsers()">
+        <input type="button" value="Delete all" onclick="deleteUsers()"> 
+        
+    </div>
+    
+    <hr/>
+    User Details:
+    <div id="currentUsers">
+        <table id="table">
+            <tr>
+                <th>User First Name</th>
+                <th>User Last Name</th>
+                <th>User Role</th>
+            </tr>
+        </table>
+    </div>
+    <script language="JavaScript">
+
+        class User{
+            constructor(userFirstName, userLastName, userRole){
+                this.userFirstName=userFirstName;
+                this.userLastName=userLastName;
+                this.userRole=userRole;
+            }     
+        }
+
+        var id = 100;
+
+        makeRequest('/users');
+        
+        function makeRequest(target){
+            var xmlhttp = new XMLHttpRequest();
+            xmlhttp.onreadystatechange = function() {
+                if (xmlhttp.readyState == XMLHttpRequest.DONE) {   // XMLHttpRequest.DONE == 4
+                if (xmlhttp.status == 200) {
+                    
+                    //alert(xmlhttp.responseText);
+                    
+                    if(target=='/users'){
+                        var rowIndex=0;
+                        document.getElementById("currentUsers").innerHTML="";
+                        document.getElementById("currentUsers").innerHTML='<table id="table"> <tr> <th>User First Name</th> <th>User Last Name</th> <th>User Role</th> </tr>  </table>';
+                        table=document.getElementById('table');
+                        JSON.parse(xmlhttp.responseText).forEach(function(value, index){
+                            var row = table.insertRow(rowIndex+1);
+                            var userFirstName = row.insertCell(0);
+                            var userLastName = row.insertCell(1);
+                            var userRole = row.insertCell(2);
+
+                            userFirstName.innerHTML=value.userFirstName;
+                            userLastName.innerHTML=value.userLastName;
+                            userRole.innerHTML=value.userRole;
+                            rowIndex=rowIndex+1;
+                        });
+                        document.getElementById('userCount').innerHTML='Current user count: '+rowIndex;
+                    }else{ 
+                        document.getElementById('message').innerHTML=xmlhttp.responseText;
+                        //setMessageTimer();    
+                        if(target=='/createUser' || target=='/deleteUsers'){
+                            //refresh the display
+                            makeRequest('/users');        
+                        }           
+                    }
+                }
+                else if (xmlhttp.status == 400) {
+                    alert('There was an error 400');
+                }
+                else {
+                    alert('something else other than 200 was returned');
+                }
+                }
+            };
+
+            if(target=='/users'){
+                xmlhttp.open("GET", target, true);
+                xmlhttp.send();
+            }else if(target=='/createUser'){
+                var b = new User(document.getElementById("newUserFirstName").value, 
+                            document.getElementById("newUserLastName").value, 
+                            document.getElementById("newUserRole").value);
+                sendRequest(target, xmlhttp, b);
+            }else if(target=='/createUsers'){
+                var b = new User("", "", "");
+                
+                b.userFirstName="FirstName"+id;
+                b.userLastName="LastName"+id;
+                b.userRole="Role"+id;
+                id = id+1;
+                sendRequest(target, xmlhttp, b);
+
+            }else if(target=='/searchUsers' || target=='/deleteUsers'){
+                xmlhttp.open("POST", target, true);
+                xmlhttp.send();
+            }
+        }
+
+        function sendRequest(target, xmlhttp, user){
+                xmlhttp.open("POST", target, true);
+                xmlhttp.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+                xmlhttp.send(JSON.stringify(user));
+        }
+
+        function createUser(){
+            makeRequest('/createUser');
+        }
+
+        function setMessageTimer(){
+            setTimeout(clearMessage, 2000);
+        }
+
+        function createUsers(){
+            var size = parseInt(document.getElementById("newCount").value);
+            for(var i=0; i<size; i++){
+                makeRequest('/createUsers');
+            }            
+        }
+
+        
+        function deleteUsers(){
+            makeRequest('/deleteUsers');
+        }
+
+        function searchUsers(){
+            makeRequest('/searchUsers');
+        }
+
+        function clearMessage(){
+            document.getElementById('message').innerHTML="";
+        }
+
+    </script>
+    <hr/>
+  </body>
+</html>
